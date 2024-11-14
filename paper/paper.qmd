@@ -1,14 +1,12 @@
 ---
-title: "Assessing Music Trends of Beyoncé and Coldplay"
-subtitle: "Song Duration and Valence Analysis Using Spotify Data"
+title: ""
+subtitle: ""
 author: 
   - Andy Jiang
-  - Onon Burentuvshin
-  - Rui Hu
-thanks: "Code and data are available at: [https://github.com/AndyYanxunJiang/spotify)."
+thanks: "Code and data are available at: [https://github.com/AndyYanxunJiang/grocery-price-analysis.git)."
 date: today
 date-format: long
-abstract: "This paper analyzes the audio features of songs from two globally renowned artists, Beyoncé and Coldplay, using Spotify's API. By focusing on song duration and valence (musical positivity), the study compares trends in their music over time. The results show that Beyoncé's songs vary more in length and tend to have higher valence, while Coldplay's tracks are more consistent in duration but exhibit a more melancholic tone."
+abstract: ""
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -20,12 +18,48 @@ bibliography: references.bib
 #| message: false
 
 library(tidyverse)
-library(spotifyr)
-library(lubridate)
+library(DBI)
+library(RSQLite)
 library(ggplot2)
 
-coldplay <- read_rds(here::here("data/01-raw_data/coldplay.rds"))
-beyonce <- read_rds(here::here("data/01-raw_data/beyonce.rds"))
+# Connect to the SQLite database
+con <- dbConnect(RSQLite::SQLite(), "/Users/y4nxunj/Downloads/hammer-2-processed.sqlite")  # Update path
+
+# Run the join query from '01_join_raw_and_product.sql' to get combined data
+query <- "
+  SELECT 
+      r.nowtime, 
+      p.vendor, 
+      r.product_id, 
+      p.product_name, 
+      p.brand, 
+      r.current_price, 
+      r.old_price, 
+      p.units, 
+      r.price_per_unit, 
+      r.other 
+  FROM 
+      raw AS r
+  INNER JOIN 
+      product AS p ON r.product_id = p.id
+  ORDER BY 
+      r.nowtime;
+"
+data <- dbGetQuery(con, query)
+
+# Disconnect from the database
+dbDisconnect(con)
+
+# Now you have 'data' in R and can use it for visualizations, e.g., average price by vendor
+avg_price_by_vendor <- aggregate(current_price ~ vendor, data, mean)
+
+ggplot(avg_price_by_vendor, aes(x = vendor, y = current_price, fill = vendor)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Price by Vendor",
+       x = "Vendor", y = "Average Price") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
 ```
 
 
@@ -54,30 +88,6 @@ Using this dataset, we compared the two artists on two main dimensions: song dur
 # Results {#sec-results}
 Our results on song duration are summarized in @fig-duration-beyonce and @fig-duration-coldplay. And our results on valence are summerized in @fig-valence.
 
-```{r}
-#| label: fig-duration-beyonce
-#| fig-cap: Duration of Songs of Beyonce
-#| echo: false
-#| warning: false
-#| message: false
-
-beyonce <- as_tibble(beyonce)
-
-beyonce |>
-  mutate(album_release_date = ymd(album_release_date)) |>
-  ggplot(aes(
-    x = album_release_date,
-    y = duration_ms,
-    group = album_release_date
-  )) +
-  geom_boxplot() +
-  geom_jitter(alpha = 0.5, width = 0.3, height = 0) +
-  theme_minimal() +
-  labs(
-    x = "Album release date",
-    y = "Duration of song (ms)"
-  )
-```
 
 ```{r}
 #| label: fig-duration-coldplay
@@ -85,23 +95,21 @@ beyonce |>
 #| echo: false
 #| warning: false
 #| message: false
+# Filter for rows where products were on sale
+sales_data <- subset(data, !is.na(old_price))
 
-coldplay <- as_tibble(coldplay)
+# Count sales occurrences by vendor
+sales_count <- as.data.frame(table(sales_data$vendor))
+colnames(sales_count) <- c("vendor", "sale_count")
 
-coldplay |>
-  mutate(album_release_date = ymd(album_release_date)) |>
-  ggplot(aes(
-    x = album_release_date,
-    y = duration_ms,
-    group = album_release_date
-  )) +
-  geom_boxplot() +
-  geom_jitter(alpha = 0.5, width = 0.3, height = 0) +
+# Plot frequency of sales by vendor
+ggplot(sales_count, aes(x = vendor, y = sale_count, fill = vendor)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Frequency of Sales by Vendor",
+       x = "Vendor", y = "Sale Count") +
   theme_minimal() +
-  labs(
-    x = "Album release date",
-    y = "Duration of song (ms)"
-  )
+  theme(legend.position = "none")
+
 ```
 
 ```{r}
@@ -111,21 +119,40 @@ coldplay |>
 #| warning: false
 #| message: false
 
-rbind(beyonce, coldplay) |>
-  select(artist_name, album_release_date, valence) |>
-  mutate(album_release_date = ymd(album_release_date)) |> 
-  ggplot(aes( x = album_release_date, y = valence, color = artist_name)) +
-  geom_point(alpha = 0.3) +
-  geom_smooth() +
+# Improved box plot with fewer jitter points and adjusted transparency and size
+set.seed(42)  # For reproducible sampling
+sampled_data <- data[sample(nrow(data), size = min(5000, nrow(data))), ]  # Sample 5000 points or fewer
+
+ggplot(data, aes(x = vendor, y = current_price, fill = vendor)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.6) +  # Hide outliers in box plot
+  geom_jitter(data = sampled_data, width = 0.2, alpha = 0.1, size = 0.5, color = "black") +  # Sampled points with low transparency
+  scale_y_continuous(trans = 'log10', limits = c(1, 100)) +  # Log scale and limit y-axis
+  labs(title = "Price Distribution Across Vendors",
+       x = "Vendor", y = "Current Price (Log Scale)") +
   theme_minimal() +
-  facet_wrap(facets = vars(artist_name), dir = "v") +
-  labs(
-    x = "Album release date",
-    y = "Valence",
-    color = "Artist"
-  ) +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "none",
+        plot.title = element_text(size = 16, face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
+  scale_fill_brewer(palette = "Set3")  # Use a color palette for better presentation
+
+
+```
+
+
+```{r}
+# Plot distribution of prices by vendor
+# Calculate average price per vendor
+avg_price_by_vendor <- aggregate(current_price ~ vendor, data, mean, na.rm = TRUE)
+
+# Plot average price by vendor
+ggplot(avg_price_by_vendor, aes(x = vendor, y = current_price, fill = vendor)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Price by Vendor",
+       x = "Vendor", y = "Average Price") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
 ```
 
 ## Song Duration
