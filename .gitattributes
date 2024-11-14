@@ -1,1 +1,2 @@
 *.sqlite filter=lfs diff=lfs merge=lfs -text
+hammer-2-processed.sqlite filter=lfs diff=lfs merge=lfs -text
