@@ -3,6 +3,8 @@ title: "Grocery Pricing Strategies: An Analysis of Vendor Positioning and Market
 subtitle: "Examining Sales Frequency, Price Distribution, and Average Price Levels Across Major Grocery Chains"
 author: 
   - Andy Jiang
+  - Rui Hu
+  - Onon Burentuvshin
 thanks: "Code and data are available at: [https://github.com/AndyYanxunJiang/grocery-price-analysis.git)."
 date: today
 date-format: long
