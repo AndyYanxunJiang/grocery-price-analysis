@@ -1,0 +1,158 @@
+---
+title: "Assessing Music Trends of Beyoncé and Coldplay"
+subtitle: "Song Duration and Valence Analysis Using Spotify Data"
+author: 
+  - Andy Jiang
+  - Onon Burentuvshin
+  - Rui Hu
+thanks: "Code and data are available at: [https://github.com/AndyYanxunJiang/spotify)."
+date: today
+date-format: long
+abstract: "This paper analyzes the audio features of songs from two globally renowned artists, Beyoncé and Coldplay, using Spotify's API. By focusing on song duration and valence (musical positivity), the study compares trends in their music over time. The results show that Beyoncé's songs vary more in length and tend to have higher valence, while Coldplay's tracks are more consistent in duration but exhibit a more melancholic tone."
+format: pdf
+number-sections: true
+bibliography: references.bib
+---
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+library(tidyverse)
+library(spotifyr)
+library(lubridate)
+library(ggplot2)
+
+coldplay <- read_rds(here::here("data/01-raw_data/coldplay.rds"))
+beyonce <- read_rds(here::here("data/01-raw_data/beyonce.rds"))
+```
+
+
+# Introduction
+
+In recent years, music streaming platforms have provided vast amounts of data that enable a deeper analysis of the characteristics of different artists’ music. By utilizing Spotify’s audio feature data, we can examine several aspects of a song such as duration, tempo, energy, and valence (a measure of musical positivity or happiness). In this analysis, we focus on two globally renowned artists, Beyoncé and Coldplay, to compare key audio features of their music over time.
+
+This study examines the duration and valence of songs released by Beyoncé and Coldplay, offering insights into how these attributes vary between the two artists. The analysis is visualized through boxplots and scatter plots, helping to reveal trends in their musical style and production across different time periods. The results suggest that while Beyoncé’s music varies more in duration and has a higher valence (indicating happier music), Coldplay’s songs are generally more consistent in length, with less valence or happiness expressed in their tracks.
+
+
+
+# Data {#sec-data}
+We use the statistical programming language R [@citeR], and library tidyverse [@tidyverse], spotifyr [@citeSpotifyr], lubridate [@lubridate], ggplot2 [@citeGG]. The data is from Spotify [@spotify].
+
+## Overview
+The key attributes of the data include:
+
+Duration: Measured in milliseconds, this represents the length of each track.
+Valence: A measure from 0 to 1 indicating how happy or sad a track sounds. Higher values correspond to happier, more cheerful music, while lower values indicate sadness or melancholy.
+Album release date: The date when each album was released, which helps in analyzing trends over time.
+Using this dataset, we compared the two artists on two main dimensions: song duration and valence.
+
+@sec-results discusses our findings on the song duration and valence between the two artists.
+
+
+# Results {#sec-results}
+Our results on song duration are summarized in @fig-duration-beyonce and @fig-duration-coldplay. And our results on valence are summerized in @fig-valence.
+
+```{r}
+#| label: fig-duration-beyonce
+#| fig-cap: Duration of Songs of Beyonce
+#| echo: false
+#| warning: false
+#| message: false
+
+beyonce <- as_tibble(beyonce)
+
+beyonce |>
+  mutate(album_release_date = ymd(album_release_date)) |>
+  ggplot(aes(
+    x = album_release_date,
+    y = duration_ms,
+    group = album_release_date
+  )) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.3, height = 0) +
+  theme_minimal() +
+  labs(
+    x = "Album release date",
+    y = "Duration of song (ms)"
+  )
+```
+
+```{r}
+#| label: fig-duration-coldplay
+#| fig-cap: Duration of Songs of Coldplay
+#| echo: false
+#| warning: false
+#| message: false
+
+coldplay <- as_tibble(coldplay)
+
+coldplay |>
+  mutate(album_release_date = ymd(album_release_date)) |>
+  ggplot(aes(
+    x = album_release_date,
+    y = duration_ms,
+    group = album_release_date
+  )) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.5, width = 0.3, height = 0) +
+  theme_minimal() +
+  labs(
+    x = "Album release date",
+    y = "Duration of song (ms)"
+  )
+```
+
+```{r}
+#| label: fig-valence
+#| fig-cap: Valence of the Two Artists' Songs
+#| echo: false
+#| warning: false
+#| message: false
+
+rbind(beyonce, coldplay) |>
+  select(artist_name, album_release_date, valence) |>
+  mutate(album_release_date = ymd(album_release_date)) |> 
+  ggplot(aes( x = album_release_date, y = valence, color = artist_name)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth() +
+  theme_minimal() +
+  facet_wrap(facets = vars(artist_name), dir = "v") +
+  labs(
+    x = "Album release date",
+    y = "Valence",
+    color = "Artist"
+  ) +
+  scale_color_brewer(palette = "Set1") +
+  theme(legend.position = "bottom")
+```
+
+## Song Duration
+	
+@fig-duration-beyonce and @fig-duration-coldplay illustrate song duration for Beyoncé and Coldplay over time. Several interesting observations can be made from these visualizations:
+
+Beyoncé: The song duration for Beyoncé shows a wider range across the years, indicating a greater variability in how long her songs tend to be. Some of her albums contain shorter tracks, while others include significantly longer ones. This suggests that Beyoncé experiments more with song length, perhaps catering to different album concepts or genres.
+
+Coldplay: On the other hand, Coldplay’s songs tend to be more consistent in duration, with less variation in length. While there are a few outliers with exceptionally long or short tracks, most of Coldplay’s songs stay within a narrower duration range. This may reflect Coldplay’s commitment to a particular style or format for their music.
+
+## Valence
+
+@fig-valence shows the valence, or happiness, of songs by Beyoncé and Coldplay over time. This is where the two artists differ most notably:
+
+Beyoncé: Her songs have generally higher valence scores, meaning that her music tends to sound more upbeat, positive, and emotionally vibrant. This aligns with the perception of Beyoncé’s music, which often conveys themes of empowerment, celebration, and joy.
+
+Coldplay: Coldplay’s music, in contrast, exhibits lower valence scores, suggesting a more melancholic or introspective tone. Coldplay is known for producing emotionally resonant tracks, often focusing on themes of love, loss, and reflection, which could explain the lower valence values.
+
+
+
+
+
+
+
+\newpage
+
+
+# References
+
+
