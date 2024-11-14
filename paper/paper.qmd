@@ -1,12 +1,12 @@
 ---
-title: ""
-subtitle: ""
+title: "Grocery Pricing Strategies: An Analysis of Vendor Positioning and Market Dynamics"
+subtitle: "Examining Sales Frequency, Price Distribution, and Average Price Levels Across Major Grocery Chains"
 author: 
   - Andy Jiang
 thanks: "Code and data are available at: [https://github.com/AndyYanxunJiang/grocery-price-analysis.git)."
 date: today
 date-format: long
-abstract: ""
+abstract: "This paper examines grocery pricing strategies across major vendors to understand how they position themselves in a competitive market. By analyzing sales frequency, price distribution, and average price levels, we identify distinct approaches used by each vendor to attract customers. Our findings reveal that some vendors, like Metro, rely on frequent promotions to appeal to a broad customer base, while others, such as No Frills and Walmart, prioritize everyday low pricing to cater to budget-conscious shoppers. This analysis highlights the varied tactics grocery vendors use to target different consumer segments, providing insights into the competitive dynamics that shape grocery pricing and customer choices."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -64,34 +64,32 @@ ggplot(avg_price_by_vendor, aes(x = vendor, y = current_price, fill = vendor)) +
 
 
 # Introduction
+In recent years, competitive pricing and promotional strategies among grocery vendors have created a rich landscape for data analysis. By examining grocery price data collected across multiple vendors, we can gain insights into various aspects of vendor pricing, such as frequency of sales, price distribution, and average price levels. This analysis focuses on several major grocery vendors, comparing their sales frequency, price ranges, and average prices to better understand their market positioning and strategies.
 
-In recent years, music streaming platforms have provided vast amounts of data that enable a deeper analysis of the characteristics of different artists’ music. By utilizing Spotify’s audio feature data, we can examine several aspects of a song such as duration, tempo, energy, and valence (a measure of musical positivity or happiness). In this analysis, we focus on two globally renowned artists, Beyoncé and Coldplay, to compare key audio features of their music over time.
-
-This study examines the duration and valence of songs released by Beyoncé and Coldplay, offering insights into how these attributes vary between the two artists. The analysis is visualized through boxplots and scatter plots, helping to reveal trends in their musical style and production across different time periods. The results suggest that while Beyoncé’s music varies more in duration and has a higher valence (indicating happier music), Coldplay’s songs are generally more consistent in length, with less valence or happiness expressed in their tracks.
+This study investigates the frequency of sales events, the distribution of product prices, and the average price by vendor, highlighting the distinct approaches taken by each vendor to attract and retain customers. Through visualizations such as bar plots and box plots, the analysis reveals trends in vendor pricing strategies, showcasing how some vendors prioritize frequent discounts, while others maintain a steady low-price approach. The findings suggest that vendors like Metro employ high-frequency sales with a broad price range, while No Frills and Walmart focus on consistently low prices. These patterns reflect the varied strategies used by grocery vendors to appeal to different consumer segments.
 
 
 
 # Data {#sec-data}
-We use the statistical programming language R [@citeR], and library tidyverse [@tidyverse], spotifyr [@citeSpotifyr], lubridate [@lubridate], ggplot2 [@citeGG]. The data is from Spotify [@spotify].
+We use the statistical programming language R [@citeR] and several libraries including tidyverse [@tidyverse], DBI [@citeDBI], RSQLite [@citeRSQLite], and ggplot2 [@citeGG]. The data was sourced from a project database created by Jacob Filipp, containing grocery price data collected across various vendors.
 
 ## Overview
 The key attributes of the data include:
 
-Duration: Measured in milliseconds, this represents the length of each track.
-Valence: A measure from 0 to 1 indicating how happy or sad a track sounds. Higher values correspond to happier, more cheerful music, while lower values indicate sadness or melancholy.
-Album release date: The date when each album was released, which helps in analyzing trends over time.
-Using this dataset, we compared the two artists on two main dimensions: song duration and valence.
+Current Price: The price of each product at the time of data collection, which helps in understanding price distribution across vendors.
+Sales Frequency: The frequency of discounted prices, indicating how often each vendor holds sales or promotional events.
+Vendor: The specific grocery store or vendor from which the pricing data was collected, allowing for comparisons between different grocery chains.
+Using this dataset, we analyzed the pricing and promotional strategies of each vendor, focusing on three main dimensions: frequency of sales, price distribution, and average price by vendor.
 
-@sec-results discusses our findings on the song duration and valence between the two artists.
+@sec-results presents our findings on these aspects and highlights the distinct strategies employed by different vendors.
 
 
 # Results {#sec-results}
-Our results on song duration are summarized in @fig-duration-beyonce and @fig-duration-coldplay. And our results on valence are summerized in @fig-valence.
-
+Our results on the frequency of sales by vendor is illustrated in @fig-sales-frequency, while @fig-price-distribution shows the distribution of prices across vendors. Additionally, @fig-average-price highlights the average price by vendor.
 
 ```{r}
-#| label: fig-duration-coldplay
-#| fig-cap: Duration of Songs of Coldplay
+#| label: fig-sales-frequency
+#| fig-cap: The Frequency of Sales by Vendor
 #| echo: false
 #| warning: false
 #| message: false
@@ -113,33 +111,49 @@ ggplot(sales_count, aes(x = vendor, y = sale_count, fill = vendor)) +
 ```
 
 ```{r}
-#| label: fig-valence
-#| fig-cap: Valence of the Two Artists' Songs
+#| label: fig-price-distribution
+#| fig-cap: The Price Distribution Across Vendors
 #| echo: false
 #| warning: false
 #| message: false
 
-# Improved box plot with fewer jitter points and adjusted transparency and size
-set.seed(42)  # For reproducible sampling
-sampled_data <- data[sample(nrow(data), size = min(5000, nrow(data))), ]  # Sample 5000 points or fewer
+# Ensure current_price is numeric and handle any non-numeric values
+data$current_price <- as.numeric(data$current_price)
 
-ggplot(data, aes(x = vendor, y = current_price, fill = vendor)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.6) +  # Hide outliers in box plot
-  geom_jitter(data = sampled_data, width = 0.2, alpha = 0.1, size = 0.5, color = "black") +  # Sampled points with low transparency
-  scale_y_continuous(trans = 'log10', limits = c(1, 100)) +  # Log scale and limit y-axis
+# Remove rows with NA, zero, or negative values in current_price
+plot_data <- data %>%
+  filter(!is.na(current_price) & current_price > 0)
+
+# Set seed and sample data
+set.seed(42)
+sampled_data <- plot_data[sample(seq_len(nrow(plot_data)), size = min(5000, nrow(plot_data))), ]
+
+# Create box plot
+ggplot(plot_data, aes(x = vendor, y = current_price, fill = vendor)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.6) +
+  geom_jitter(data = sampled_data, width = 0.2, alpha = 0.1, size = 0.5, color = "black") +
+  scale_y_continuous(trans = 'log10', limits = c(1, 100)) +
   labs(title = "Price Distribution Across Vendors",
        x = "Vendor", y = "Current Price (Log Scale)") +
   theme_minimal() +
-  theme(legend.position = "none",
-        plot.title = element_text(size = 16, face = "bold"),
-        axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for readability
-  scale_fill_brewer(palette = "Set3")  # Use a color palette for better presentation
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size = 16),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  scale_fill_brewer(palette = "Set3")
 
 
 ```
 
 
 ```{r}
+#| label: fig-average-price
+#| fig-cap: The Average Price by Vendor
+#| echo: false
+#| warning: false
+#| message: false
+
 # Plot distribution of prices by vendor
 # Calculate average price per vendor
 avg_price_by_vendor <- aggregate(current_price ~ vendor, data, mean, na.rm = TRUE)
@@ -155,23 +169,27 @@ ggplot(avg_price_by_vendor, aes(x = vendor, y = current_price, fill = vendor)) +
 
 ```
 
-## Song Duration
-	
-@fig-duration-beyonce and @fig-duration-coldplay illustrate song duration for Beyoncé and Coldplay over time. Several interesting observations can be made from these visualizations:
+## Frequency of Sales by Vendor
+In @fig-sales-frequency, Metro stands out with a noticeably higher frequency of sales compared to all other vendors. This suggests that Metro might be employing an aggressive pricing strategy, using frequent sales promotions to attract a large customer base. In contrast, Loblaws and Voila follow at a second tier, with sales frequencies approximately half that of Metro. This moderate level of sales activity indicates a competitive, but less aggressive, approach. No Frills, Save-On-Foods, and Walmart have similar and relatively low frequencies, at around half the level of Loblaws and Voila. This low frequency suggests that these vendors may focus less on frequent promotional events and more on maintaining stable pricing or lower base prices.
 
-Beyoncé: The song duration for Beyoncé shows a wider range across the years, indicating a greater variability in how long her songs tend to be. Some of her albums contain shorter tracks, while others include significantly longer ones. This suggests that Beyoncé experiments more with song length, perhaps catering to different album concepts or genres.
+## Price Distribution Across Vendors
 
-Coldplay: On the other hand, Coldplay’s songs tend to be more consistent in duration, with less variation in length. While there are a few outliers with exceptionally long or short tracks, most of Coldplay’s songs stay within a narrower duration range. This may reflect Coldplay’s commitment to a particular style or format for their music.
+@fig-price-distribution reveals further distinctions in pricing strategy and positioning among the vendors. No Frills and Walmart show consistently lower price distributions, aligning with a budget-friendly image. This pattern suggests that these vendors aim to attract price-sensitive customers by offering lower-cost items, with minimal overlap into higher price ranges. Metro, on the other hand, displays a much wider price range, with a significant number of higher price points that are not seen in other vendors. This broad range suggests that Metro caters to a wide spectrum of customers, from budget-conscious shoppers to those willing to pay for premium products. Other vendors, such as Loblaws and Voila, show moderate price distributions, which are less spread out than Metro’s but still cover a range that suggests a balanced approach rather than strictly budget or premium positioning.
 
-## Valence
-
-@fig-valence shows the valence, or happiness, of songs by Beyoncé and Coldplay over time. This is where the two artists differ most notably:
-
-Beyoncé: Her songs have generally higher valence scores, meaning that her music tends to sound more upbeat, positive, and emotionally vibrant. This aligns with the perception of Beyoncé’s music, which often conveys themes of empowerment, celebration, and joy.
-
-Coldplay: Coldplay’s music, in contrast, exhibits lower valence scores, suggesting a more melancholic or introspective tone. Coldplay is known for producing emotionally resonant tracks, often focusing on themes of love, loss, and reflection, which could explain the lower valence values.
+## Average Price by Vendor
+@fig-average-price aligns with the previous observations, highlighting Metro’s position as the highest-priced vendor on average. This high average price, combined with Metro’s wide distribution range, reinforces the notion that Metro offers a variety of products, including higher-priced or premium items. Galleria follows Metro with a relatively high average price, indicating a potential focus on specialty or premium goods. No Frills and Walmart emerge as the lowest-priced vendors on average, solidifying their positioning as budget-friendly options. The other vendors, such as Loblaws, Save-On-Foods, T&T, and Voila, occupy a middle ground, with average prices slightly above the lowest-priced vendors and below Galleria, suggesting a balanced pricing approach that caters to both cost-conscious and mid-range consumers.
 
 
+# Discussion {#sec-discussion}
+The results of this analysis reveal distinct pricing and promotional strategies among the grocery vendors, indicating how each vendor may be positioning itself within the market. Metro’s high frequency of sales, shown in the sales frequency graph, suggests a competitive pricing strategy that relies heavily on promotional events to attract customers. This approach could be aimed at creating a perception of savings, encouraging frequent purchases, and catering to a broad range of customers who respond to discounts. The presence of frequent sales might also reflect Metro’s intention to balance a diverse range of price points, as seen in the wide distribution of prices across products. This flexibility allows Metro to cater to both budget-conscious consumers and those willing to pay premium prices.
+
+On the other hand, No Frills and Walmart demonstrate a consistent commitment to low prices, with lower price distributions and the lowest average prices among the vendors. Their relatively low frequency of sales suggests a focus on everyday low pricing rather than relying on promotions to drive customer traffic. This approach is likely attractive to price-sensitive shoppers who value predictably low prices over the fluctuations associated with frequent sales. The data implies that No Frills and Walmart have established themselves as budget-friendly options, strategically positioning themselves as reliable choices for consumers seeking affordability.
+
+Galleria, with a high average price and fewer sales, appears to target a different segment. The relatively high prices suggest a focus on specialty or premium products, positioning Galleria as a niche or premium vendor within the market. This positioning may attract consumers who prioritize quality or unique offerings over low prices. The lack of high-frequency sales events implies a strategy that focuses less on discount-driven customer acquisition and more on brand or product differentiation, possibly appealing to a specific audience that values specialty goods.
+
+The remaining vendors, including Loblaws, Save-On-Foods, T&T, and Voila, demonstrate a more balanced approach. These vendors have moderate frequencies of sales and average prices, positioning them between the budget-oriented and premium segments. This strategy likely appeals to a broad consumer base that includes both cost-conscious shoppers and those willing to spend slightly more for a variety of options. By maintaining average prices that are neither the lowest nor the highest, these vendors may capture customers seeking value without the extremes of budget or premium positioning.
+
+Overall, the data illustrates a competitive landscape where each vendor’s pricing and promotional strategy plays a distinct role in shaping customer perception and loyalty. Metro’s aggressive promotional tactics, combined with a wide range of prices, allow it to attract a diverse audience. Meanwhile, No Frills and Walmart stand out as dependable low-cost options, appealing to value-driven customers. Galleria’s premium positioning caters to a niche market segment, and the remaining vendors capture a middle ground, appealing to customers looking for a balance of price and quality. These findings underscore the varied strategies used by grocery vendors to differentiate themselves and compete for different consumer segments in a competitive market.
 
 
 
