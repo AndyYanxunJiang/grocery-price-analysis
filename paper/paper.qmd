@@ -26,7 +26,7 @@ library(RSQLite)
 library(ggplot2)
 
 # Connect to the SQLite database
-con <- dbConnect(RSQLite::SQLite(), "/Users/y4nxunj/Downloads/hammer-2-processed.sqlite")  # Update path
+con <- dbConnect(RSQLite::SQLite(), "../data/hammer-2-processed.sqlite")
 
 # Run the join query from '01_join_raw_and_product.sql' to get combined data
 query <- "
@@ -110,8 +110,7 @@ colnames(sales_count) <- c("vendor", "sale_count")
 # Plot frequency of sales by vendor
 ggplot(sales_count, aes(x = vendor, y = sale_count, fill = vendor)) +
   geom_bar(stat = "identity") +
-  labs(title = "Frequency of Sales by Vendor",
-       x = "Vendor", y = "Sale Count") +
+  labs(x = "Vendor", y = "Sale Count") +
   theme_minimal() +
   theme(legend.position = "none")
 
@@ -140,8 +139,7 @@ ggplot(plot_data, aes(x = vendor, y = current_price, fill = vendor)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.6) +
   geom_jitter(data = sampled_data, width = 0.2, alpha = 0.1, size = 0.5, color = "black") +
   scale_y_continuous(trans = 'log10', limits = c(1, 100)) +
-  labs(title = "Price Distribution Across Vendors",
-       x = "Vendor", y = "Current Price (Log Scale)") +
+  labs(x = "Vendor", y = "Current Price (Log Scale)") +
   theme_minimal() +
   theme(
     legend.position = "none",
@@ -168,8 +166,7 @@ avg_price_by_vendor <- aggregate(current_price ~ vendor, data, mean, na.rm = TRU
 # Plot average price by vendor
 ggplot(avg_price_by_vendor, aes(x = vendor, y = current_price, fill = vendor)) +
   geom_bar(stat = "identity") +
-  labs(title = "Average Price by Vendor",
-       x = "Vendor", y = "Average Price") +
+  labs(x = "Vendor", y = "Average Price") +
   theme_minimal() +
   theme(legend.position = "none")
 
